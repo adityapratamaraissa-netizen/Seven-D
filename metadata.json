@@ -1,0 +1,6 @@
+{
+  "name": "SEVEN D Class Hub",
+  "description": "Website kelas premium modern, futuristik, dan interaktif untuk kelas SEVEN D - SMPN 2 Lamongan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
