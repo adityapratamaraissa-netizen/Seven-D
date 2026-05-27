@@ -52,7 +52,7 @@ const AppContent: React.FC = () => {
   }, [currentUser]);
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] select-none text-slate-800 antialiased flex flex-col justify-between overflow-x-hidden">
+    <div className="min-h-screen bg-[#F4F6FA] text-slate-800 antialiased flex flex-col justify-between overflow-x-hidden">
       
       {/* 1. OUT-OF-PORTAL ROUTING PANEL */}
       {currentScreen === 'landing' && (

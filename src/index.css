@@ -16,6 +16,8 @@ body {
   background-color: #F7F9FC;
   font-family: var(--font-sans);
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   color: #1E293B;
 }
 

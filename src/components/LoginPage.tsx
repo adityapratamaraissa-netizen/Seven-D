@@ -14,7 +14,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
-  const { loginSiswa, loginWaliKelas, students } = useClassHub();
+  const { loginSiswa, loginWaliKelas, students, classLogo } = useClassHub();
 
   const [loginMode, setLoginMode] = useState<'code' | 'qr'>('code');
   const [searchName, setSearchName] = useState('');
@@ -150,7 +150,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 sm:p-6 overflow-hidden font-sans">
+    <div className="relative min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-sans">
       {/* Animated Aesthetic Background Core Ellipse Elements */}
       <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-cyan-300/35 to-blue-400/20 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-indigo-300/35 to-purple-400/20 blur-[110px] pointer-events-none" />
@@ -166,8 +166,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
           
           {/* Logo Brand Header */}
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/15">
-              <span className="text-white font-extrabold text-xl font-mono">7D</span>
+            <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center overflow-hidden shadow-lg shadow-blue-500/15 bg-slate-50 border border-slate-100">
+              <img 
+                src={classLogo} 
+                alt="Logo SEVEN D" 
+                className="w-full h-full object-cover select-none"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    parent.className = "w-12 h-12 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/15 text-white font-extrabold text-xl font-mono";
+                    parent.innerHTML = '7D';
+                  }
+                }}
+              />
             </div>
             <h2 className="text-2xl font-black text-slate-800 tracking-tight">Portal Premium SEVEN D</h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{SCHOOL_NAME}</p>

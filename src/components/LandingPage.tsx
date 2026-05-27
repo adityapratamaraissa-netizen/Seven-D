@@ -6,6 +6,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Bot, Sparkles, Flame, Users, CalendarCheck, Shield, ChevronRight } from 'lucide-react';
+import { useClassHub } from '../context/ClassHubContext';
 import { SCHOOL_NAME, HOMEROOM_TEACHER } from '../data/students';
 
 interface LandingPageProps {
@@ -13,8 +14,10 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+  const { classLogo } = useClassHub();
+
   return (
-    <div className="relative min-h-screen bg-[#F8FAFC] overflow-hidden flex flex-col justify-between selection:bg-purple-100 selection:text-purple-900 font-sans">
+    <div className="relative min-h-screen bg-[#F8FAFC] overflow-y-auto flex flex-col justify-between selection:bg-purple-100 selection:text-purple-900 font-sans">
       {/* Cinematic Glowing Blobs */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-cyan-200/40 to-blue-300/30 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-200/40 to-pink-300/30 blur-[130px] pointer-events-none" />
@@ -42,8 +45,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       {/* Header */}
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between z-10">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center shadow-md shadow-blue-500/10">
-            <span className="text-white font-bold text-lg tracking-wider">7D</span>
+          <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-md shadow-blue-500/10 bg-white border border-slate-100">
+            <img 
+              src={classLogo} 
+              alt="Logo SEVEN D" 
+              className="w-full h-full object-cover select-none"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  parent.className = "w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center shadow-md shadow-blue-500/10 text-white font-bold text-lg tracking-wider font-mono";
+                  parent.innerHTML = '7D';
+                }
+              }}
+            />
           </div>
           <div>
             <span className="text-slate-800 font-semibold text-base tracking-tight font-sans">PORTAL SEVEN D</span>

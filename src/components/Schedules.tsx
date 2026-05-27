@@ -199,7 +199,7 @@ export const Schedules: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 py-6 font-sans select-none text-left">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 py-6 font-sans text-left">
       
       {/* 1. SELECTION HEADER AND SUB TABS MAP */}
       <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-slate-200/50 p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
