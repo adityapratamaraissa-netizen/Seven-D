@@ -655,16 +655,23 @@ async function start() {
     });
   }
 
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[SEVEN_D_SERVER] Full stack app running on http://localhost:${PORT}`);
-  });
-
-  // Dynamic upgrade on connection
-  server.on('upgrade', (request, socket, head) => {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
+  // Only run standard server listener if not inside Vercel serverless environment
+  if (!process.env.VERCEL) {
+    const server = app.listen(PORT, "0.0.0.0", () => {
+      console.log(`[SEVEN_D_SERVER] Full stack app running on http://localhost:${PORT}`);
     });
-  });
+
+    // Dynamic upgrade on connection
+    server.on('upgrade', (request, socket, head) => {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    });
+  } else {
+    console.log("[SEVEN_D_SERVER] Running in Vercel Serverless mode. Skipping .listen()");
+  }
 }
 
 start();
+
+export default app;
