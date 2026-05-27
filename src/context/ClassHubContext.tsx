@@ -249,7 +249,7 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isFocusModeActive] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [classLogo, setClassLogo] = useState<string>(() => {
-    return localStorage.getItem('7d_class_logo') || '/icon.svg';
+    return localStorage.getItem('7d_class_logo') || '/logo_kelas.svg';
   });
 
   const wsRef = useRef<WebSocket | null>(null);
