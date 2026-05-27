@@ -42,6 +42,21 @@ export const AIStudyHub: React.FC = () => {
   const { currentUser, solveAIQuizComplete } = useClassHub();
 
   const [activeSubTab, setActiveSubTab] = useState<'chat' | 'summarize' | 'quiz'>('chat');
+  const [isAiOnline, setIsAiOnline] = useState<boolean | null>(null);
+  const [aiProvider, setAiProvider] = useState<string>('');
+
+  React.useEffect(() => {
+    fetch('/api/ai/status')
+      .then(res => res.json())
+      .then(data => {
+        setIsAiOnline(data.online);
+        setAiProvider(data.provider);
+      })
+      .catch(err => {
+        console.error("Gagal memeriksa status AI:", err);
+        setIsAiOnline(false);
+      });
+  }, []);
 
   // --- 1. AI Assistant Chat States ---
   const [chatInput, setChatInput] = useState('');
@@ -112,9 +127,13 @@ export const AIStudyHub: React.FC = () => {
 
       const data = await res.json();
       setChatHistory(prev => [...prev, { role: 'assistant', content: data.text }]);
+      if (data.offline) {
+        setIsAiOnline(false);
+      }
     } catch (err: any) {
       console.error(err);
-      setChatHistory(prev => [...prev, { role: 'assistant', content: `⚠️ Gagal menghubungi asisten AI: ${err.message}. Pastikan API key sudah ditambahkan.` }]);
+      setIsAiOnline(false);
+      setChatHistory(prev => [...prev, { role: 'assistant', content: `⚠️ Gagal menghubungi asisten AI: ${err.message}. Layanan beralih ke mode offline.` }]);
     } finally {
       setIsChatLoading(false);
     }
@@ -140,8 +159,12 @@ export const AIStudyHub: React.FC = () => {
       if (!response.ok) throw new Error(await response.text());
       const data = await response.json();
       setSummaryResult(data.summary);
+      if (data.offline) {
+        setIsAiOnline(false);
+      }
     } catch (err: any) {
-      setSummaryResult(`⚠️ **ERROR**: Gagalan sistem merangkum materi. ${err.message}`);
+      setIsAiOnline(false);
+      setSummaryResult(`⚠️ **ERROR**: Kegagalan sistem merangkum materi. ${err.message}. Layanan beralih ke mode offline.`);
     } finally {
       setIsSummLoding(false);
     }
@@ -180,11 +203,15 @@ export const AIStudyHub: React.FC = () => {
       const data = await res.json();
       if (data.quiz && data.quiz.length > 0) {
         setQuizQuestions(data.quiz);
+        if (data.offline) {
+          setIsAiOnline(false);
+        }
       } else {
         throw new Error("Format kuiz yang dihasilkan tidak valid.");
       }
     } catch (err: any) {
-      alert(`Gagal membuat kuis otomatis: ${err.message}`);
+      setIsAiOnline(false);
+      alert(`Gagal membuat kuis otomatis: ${err.message}. Menggunakan kuis cadangan.`);
     } finally {
       setIsQuizLoading(false);
     }
@@ -260,6 +287,24 @@ export const AIStudyHub: React.FC = () => {
         </div>
       </div>
 
+      {/* AI STATUS WARNING BAR */}
+      {isAiOnline === false && (
+        <div className="bg-amber-50 border border-amber-250/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-amber-100/70 rounded-xl text-amber-700 font-bold text-[10px] shrink-0 font-mono">
+              OFFLINE
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-800">AI sedang offline</h4>
+              <p className="text-[11px] text-slate-500">API key tidak terdeteksi. Fitur chat, rangkuman, dan kuis berjalan dalam mode fallback offline secara otomatis.</p>
+            </div>
+          </div>
+          <span className="text-[10px] text-amber-700 font-semibold bg-amber-100/50 px-2.5 py-1 rounded-lg">
+            Mode Fallback Aktif
+          </span>
+        </div>
+      )}
+
       {/* SUB PANELS */}
       <div className="w-full">
         {/* TAB 1: AI STUDY COMPANION */}
@@ -270,7 +315,11 @@ export const AIStudyHub: React.FC = () => {
               {/* Chat room messages view */}
               <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40 rounded-t-3xl text-sm font-semibold text-slate-700">
                 <span className="flex items-center gap-1.5"><Bot className="w-4 h-4 text-indigo-500" /> Sesi Belajar Online</span>
-                <span className="text-[10px] text-emerald-500 font-mono">● Active Tutor</span>
+                {isAiOnline === false ? (
+                  <span className="text-[10px] text-amber-500 font-mono flex items-center gap-1">● AI sedang offline (Fallback)</span>
+                ) : (
+                  <span className="text-[10px] text-emerald-500 font-mono">● Active Tutor ({aiProvider ? aiProvider.toUpperCase() : 'GEMINI'})</span>
+                )}
               </div>
 
               <div className="flex-grow p-4 overflow-y-auto space-y-4 pr-2">
