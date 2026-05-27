@@ -18,7 +18,8 @@ export const ChatDiscord: React.FC = () => {
     chatMessages,
     sendChatMessage,
     reactToMessage,
-    deleteMessage
+    deleteMessage,
+    sendTypingNotice
   } = useClassHub();
 
   const [messageText, setMessageText] = useState('');
@@ -30,6 +31,28 @@ export const ChatDiscord: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordTimer, setRecordTimer] = useState(0);
   const recordingInterval = useRef<any>(null);
+
+  // Typing notice tracker
+  const typingTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (messageText.trim().length > 0) {
+      sendTypingNotice(true);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTypingNotice(false);
+      }, 2000);
+    } else {
+      sendTypingNotice(false);
+    }
+  }, [messageText]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      sendTypingNotice(false);
+    };
+  }, []);
 
   // Auto scroll to chat bottom
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -53,6 +76,8 @@ export const ChatDiscord: React.FC = () => {
     setMessageText('');
     setReplyTarget(null);
     setAttachment(null);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    sendTypingNotice(false);
   };
 
   // Simulated Voice Note recording
@@ -99,6 +124,7 @@ export const ChatDiscord: React.FC = () => {
   };
 
   const currentStudentsOnline = students.filter(s => s.id !== 0);
+  const typingStudents = students.filter(s => s.isOnline && s.onlineStatus === 'typing' && s.id !== currentUser.id);
 
   // Quick react emoji list
   const QUICK_EMOJIS = ["👍", "🔥", "❤️", "💵", "📌", "😆", "✨", "👀"];
@@ -195,6 +221,12 @@ export const ChatDiscord: React.FC = () => {
               // Admin/pengurus or own message can delete
               const canDelete = currentUser.role !== 'Member' || currentUser.id === msg.studentId;
 
+              // Query modern live avatar & author metadata dynamically from active synced classroom list
+              const senderStudent = students.find(s => s.id === msg.studentId);
+              const displayMessageAvatar = senderStudent ? senderStudent.avatar : msg.avatar;
+              const displayMessageName = senderStudent ? senderStudent.name : msg.studentName;
+              const displayMessageRole = senderStudent ? senderStudent.role : msg.role;
+
               return (
                 <div key={msg.id} className="flex flex-col border border-transparent hover:border-slate-50 hover:bg-slate-50/20 p-2.5 rounded-2xl transition-all relative group/item">
                   
@@ -209,7 +241,7 @@ export const ChatDiscord: React.FC = () => {
 
                   <div className="flex items-start space-x-3 text-left">
                     <img 
-                      src={msg.avatar} 
+                      src={displayMessageAvatar} 
                       alt="avatar" 
                       className="w-8 h-8 rounded-full border border-slate-200/30 object-cover mt-0.5 shrink-0"
                       referrerPolicy="no-referrer"
@@ -217,16 +249,16 @@ export const ChatDiscord: React.FC = () => {
                     
                     <div className="flex-grow min-w-0">
                       <div className="flex items-baseline space-x-2">
-                        <span className="text-xs font-black text-slate-800">{msg.studentName}</span>
+                        <span className="text-xs font-black text-slate-800">{displayMessageName}</span>
                         {/* Custom role badge */}
                         <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full font-sans truncate ${
-                          msg.role === 'Admin' ? 'bg-red-50 text-red-600 border border-red-100' :
-                          msg.role.includes('Bendahara') ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                          msg.role.includes('Sekretaris') ? 'bg-purple-50 text-purple-700 border border-purple-100' :
-                          msg.role.includes('Ketua') ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                          displayMessageRole === 'Admin' ? 'bg-red-50 text-red-600 border border-red-100' :
+                          displayMessageRole.includes('Bendahara') ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                          displayMessageRole.includes('Sekretaris') ? 'bg-purple-50 text-purple-700 border border-purple-100' :
+                          displayMessageRole.includes('Ketua') ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                           'bg-slate-100 text-slate-500'
                         }`}>
-                          {msg.role}
+                          {displayMessageRole}
                         </span>
                         <span className="text-[8px] text-slate-400 font-mono font-medium">{msg.timestamp}</span>
                       </div>
@@ -381,6 +413,20 @@ export const ChatDiscord: React.FC = () => {
               >
                 Batal
               </button>
+            </div>
+          )}
+
+          {/* Typing Indicator Bar */}
+          {typingStudents.length > 0 && (
+            <div className="px-5 py-1.5 text-[10px] text-slate-500 font-medium flex items-center gap-2 bg-slate-50/10 border-t border-slate-100">
+              <span className="flex space-x-0.5 shrink-0 items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </span>
+              <span>
+                <strong>{typingStudents.map(s => s.name.split(' ')[0]).join(', ')}</strong> sedang mengetik...
+              </span>
             </div>
           )}
 

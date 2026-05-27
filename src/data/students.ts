@@ -507,43 +507,177 @@ export const INITIAL_STUDENTS: Student[] = [
   }
 ];
 
-// Lesson schedules structured elegantly
+// Detailed registry of school teachers for Seven D
+export interface TeacherDetails {
+  id: string;
+  name: string;
+  subject: string;
+  avatar: string;
+  bio: string;
+  phone: string;
+  room: string;
+}
+
+export const TEACHERS: Record<string, TeacherDetails> = {
+  "Bu Hnik": {
+    id: "t-hnik",
+    name: "Bu Hnik, S.Pd",
+    subject: "Pendidikan Kewarganegaraan (PKN)",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Hnik&backgroundColor=ffdfbf",
+    bio: "Menginspirasi nilai bela negara, nasionalisme, dan kedewasaan kepemimpinan siswa SEVEN D.",
+    phone: "+62 821-4190-7711",
+    room: "Kantor Guru"
+  },
+  "Bu Atik": {
+    id: "t-atik",
+    name: "Bu Atik, S.Pd",
+    subject: "Ilmu Pengetahuan Sosial (IPS)",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Atik&backgroundColor=ffd5dc",
+    bio: "Pecinta sejarah dan sosiologi, siap membimbing generasi muda memahami dunia sosial.",
+    phone: "+62 857-3023-9988",
+    room: "Kantor Guru"
+  },
+  "Bu Eka": {
+    id: "t-eka",
+    name: "Bu Eka, S.Psi",
+    subject: "Bimbingan Konseling (BK)",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Eka&backgroundColor=d5ffd9",
+    bio: "Pendengar yang bijaksana, siap mendampingi tumbuh kembang mental dan emosional siswa.",
+    phone: "+62 813-1122-3344",
+    room: "Kantor Guru"
+  },
+  "Pak Al": {
+    id: "t-al",
+    name: "Pak Al, S.Kom",
+    subject: "TI, Coding, dan AI",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=PakAl&backgroundColor=b6e3f4",
+    bio: "Instruktur Teknologi Modern & AI. Menjadikan pemrograman terasa mudah, seru, dan kreatif.",
+    phone: "+62 856-4211-1925",
+    room: "Kantor Guru"
+  },
+  "Bu Wiwin": {
+    id: "t-wiwin",
+    name: "Bu Wiwin, S.Pd",
+    subject: "Seni Budaya dan Prakarya (SBdP)",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Wiwin&backgroundColor=c0aede",
+    bio: "Mengajar kreasi rupa, seni kriya, musik, dan keindahan estetika budaya lokal.",
+    phone: "+62 812-7489-0123",
+    room: "Kantor Guru"
+  },
+  "Bu Sri": {
+    id: "t-sri",
+    name: "Bu Sri, M.Pd",
+    subject: "Bahasa Inggris",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Sri&backgroundColor=f0f0f0",
+    bio: "Bilingual enthusiast! Melatih kefasihan berkomunikasi global secara aktif dan interaktif.",
+    phone: "+62 813-8990-2521",
+    room: "Kantor Guru"
+  },
+  "Pak Rizal": {
+    id: "t-rizal",
+    name: "Pak Rizal, S.Ag",
+    subject: "Bahasa Arab",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Rizal&backgroundColor=d1f4ff",
+    bio: "Menggali asimilasi budaya ketimuran dan kaidah sastra nahwu shorof secara intensif.",
+    phone: "+62 822-4589-9110",
+    room: "Kantor Guru"
+  },
+  "Bu Dita": {
+    id: "t-dita",
+    name: "Bu Dita, S.S",
+    subject: "Bahasa Indonesia",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Dita&backgroundColor=ffdfbf",
+    bio: "Ahli tata bahasa, jurnalisme sekolah, dan pengasah bakat sastra kepenulisan kreatif.",
+    phone: "+62 899-7001-1122",
+    room: "Kantor Guru"
+  },
+  "Bu Tya": {
+    id: "t-tya",
+    name: "Bu Tya, S.Pd",
+    subject: "Bahasa Jawa",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Tya&backgroundColor=ffd5dc",
+    bio: "Menanamkan nilai unggah-unggih bekti luhur serta melestarikan keindahan budaya aksara Jawa.",
+    phone: "+62 878-1234-5678",
+    room: "Kantor Guru"
+  },
+  "Pak Daffa": {
+    id: "t-daffa",
+    name: "Pak Daffa, M.Si",
+    subject: "Ilmu Pengetahuan Alam (IPA)",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Daffa&backgroundColor=d5ffd9",
+    bio: "Pecinta riset eksperimental, siap meledakkan rasa penasaran ilmiah dalam fisika dan biologi.",
+    phone: "+62 812-2525-4646",
+    room: "Kantor Guru"
+  },
+  "Pak Wahyudin": {
+    id: "t-wahyudin",
+    name: "M. Wahyudin, S.Pd",
+    subject: "Penjas Orkes & Pembina Wali Kelas 7D",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Wahyudin&backgroundColor=b6e3f4",
+    bio: "Wali Kelas kebanggaan 7D! Mengolahragakan masyarakat dan memasyarakatkan olahraga sehat.",
+    phone: "+62 821-6543-2101",
+    room: "Kantor Guru"
+  },
+  "Bu Wiwik": {
+    id: "t-wiwik",
+    name: "Bu Wiwik, S.Pd",
+    subject: "Matematika",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Wiwik&backgroundColor=ffd5dc",
+    bio: "Pakar kalkulus dan geometri yang mengubah matematika menjadi sains angka yang menantang.",
+    phone: "+62 811-9293-9495",
+    room: "Kantor Guru"
+  },
+  "Bu Nimas": {
+    id: "t-nimas",
+    name: "Bu Nimas, S.Pd.I",
+    subject: "Pendidikan Agama Islam (PAI)",
+    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Nimas&backgroundColor=c0aede",
+    bio: "Pembimbing spiritual, menanamkan akhlakul karimah serta kebajikan beragama sehari-hari.",
+    phone: "+62 856-9122-3838",
+    room: "Kantor Guru"
+  }
+};
+
+// Lesson schedules structured elegantly with colors and categorized tags
 export const LESSON_SCHEDULE = {
   "Senin": [
-    { time: "07:00 - 07:45", name: "Upacara Bendera", room: "Lapangan Utama", icon: "Flag" },
-    { time: "07:45 - 09:15", name: "Pendidikan Kewarganegaraan", room: "Ruang Kelas 7D", teacher: "Dra. Siti Aminah", icon: "Shield" },
-    { time: "09:15 - 09:30", name: "Istirahat Ke-1", room: "Kantin / Selasar", icon: "Coffee" },
-    { time: "09:30 - 11:00", name: "Ilmu Pengetahuan Sosial", room: "Ruang Kelas 7D", teacher: "Drs. Budi Setiawan", icon: "Globe" },
-    { time: "11:00 - 11:45", name: "Bimbingan Konseling", room: "Ruang BK", teacher: "Rina Setyowati, S.Psi", icon: "Users" },
-    { time: "11:45 - 13:15", name: "Teknologi Informatika", room: "Lab Komputer 02", teacher: "Slamet Utomo, S.Kom", icon: "Cpu" }
+    { time: "07:00 - 07:45", name: "Upacara Bendera", room: "Lapangan Utama", icon: "Flag", color: "bg-slate-50 border-slate-300 text-slate-700" },
+    { time: "07:45 - 09:15", name: "Pendidikan Kewarganegaraan (PKN)", room: "Ruang Kelas 7D", teacher: "Bu Hnik", icon: "Shield", color: "bg-blue-50/70 border-blue-200 text-blue-700" },
+    { time: "09:15 - 09:30", name: "Istirahat Ke-1", room: "Kantin / Selasar", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "09:30 - 11:00", name: "Ilmu Pengetahuan Sosial (IPS)", room: "Ruang Kelas 7D", teacher: "Bu Atik", icon: "Globe", color: "bg-orange-50/70 border-orange-200 text-orange-700" },
+    { time: "11:00 - 11:45", name: "Bimbingan Konseling (BK)", room: "Ruang BK", teacher: "Bu Eka", icon: "Heart", color: "bg-purple-50/70 border-purple-200 text-purple-700" },
+    { time: "11:45 - 12:15", name: "Istirahat Ke-2 / Dzuhur", room: "Masjid / Selasar", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "12:15 - 13:45", name: "Teknologi Informatika (TI)", room: "Lab Komputer 02", teacher: "Pak Al", icon: "Cpu", color: "bg-indigo-50/70 border-indigo-200 text-indigo-700" }
   ],
   "Selasa": [
-    { time: "07:00 - 08:30", name: "Seni Budaya dan Prakarya", room: "Selasar Seni / Kelas", teacher: "Dewi Lestari, S.Pd", icon: "Palette" },
-    { time: "08:30 - 10:00", name: "Bahasa Inggris", room: "Ruang Kelas 7D", teacher: "Nurlaila, M.Pd", icon: "Languages" },
-    { time: "10:00 - 10:15", name: "Istirahat Ke-1", room: "Kantin / Selasar", icon: "Coffee" },
-    { time: "10:15 - 11:45", name: "Bahasa Arab", room: "Ruang Kelas 7D", teacher: "Ust. Ahmad Fauzi", icon: "BookOpen" },
-    { time: "11:45 - 13:15", name: "Bahasa Indonesia", room: "Ruang Kelas 7D", teacher: "Indah Wahyuni, S.Pd", icon: "PenTool" }
+    { time: "07:00 - 08:30", name: "Seni Budaya dan Prakarya (SBdP)", room: "Selasar Seni / Kelas", teacher: "Bu Wiwin", icon: "Palette", color: "bg-pink-50/70 border-pink-200 text-pink-700" },
+    { time: "08:30 - 10:00", name: "Bahasa Inggris", room: "Ruang Kelas 7D", teacher: "Bu Sri", icon: "Languages", color: "bg-sky-50/70 border-sky-200 text-sky-700" },
+    { time: "10:00 - 10:15", name: "Istirahat Ke-1", room: "Kantin / Selasar", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "10:15 - 11:45", name: "Bahasa Arab", room: "Ruang Kelas 7D", teacher: "Pak Rizal", icon: "BookOpen", color: "bg-emerald-50/70 border-emerald-200 text-emerald-700" },
+    { time: "11:45 - 13:15", name: "Bahasa Indonesia", room: "Ruang Kelas 7D", teacher: "Bu Dita", icon: "PenTool", color: "bg-teal-50/70 border-teal-200 text-teal-700" }
   ],
   "Rabu": [
-    { time: "07:00 - 08:30", name: "Bahasa Indonesia", room: "Ruang Kelas 7D", teacher: "Indah Wahyuni, S.Pd", icon: "PenTool" },
-    { time: "08:30 - 10:00", name: "Coding dan AI", room: "Lab Komputer 01", teacher: "M. Wahyudin, S.Pd", icon: "Bot" },
-    { time: "10:00 - 10:15", name: "Istirahat Ke-1", room: "Kantin / Selasar", icon: "Coffee" },
-    { time: "10:15 - 11:00", name: "Bahasa Jawa", room: "Ruang Kelas 7D", teacher: "Sunarto, S.Pd", icon: "Library" },
-    { time: "11:00 - 11:50", name: "Ilmu Pengetahuan Sosial", room: "Ruang Kelas 7D", teacher: "Drs. Budi Setiawan", icon: "Globe" },
-    { time: "12:15 - 13:30", name: "Ilmu Pengetahuan Alam", room: "Laboratorium Fisika", teacher: "Dr. Supriyanto", icon: "Atom" }
+    { time: "07:00 - 08:30", name: "Bahasa Indonesia", room: "Ruang Kelas 7D", teacher: "Bu Dita", icon: "PenTool", color: "bg-teal-50/70 border-teal-200 text-teal-700" },
+    { time: "08:30 - 10:00", name: "Coding dan AI", room: "Lab Komputer 01", teacher: "Pak Al", icon: "Bot", color: "bg-violet-50/70 border-violet-200 text-violet-700" },
+    { time: "10:00 - 10:15", name: "Istirahat Ke-1", room: "Kantin / Selasar", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "10:15 - 11:00", name: "Bahasa Jawa", room: "Ruang Kelas 7D", teacher: "Bu Tya", icon: "Library", color: "bg-rose-50/70 border-rose-200 text-rose-700" },
+    { time: "11:00 - 11:50", name: "Ilmu Pengetahuan Sosial (IPS)", room: "Ruang Kelas 7D", teacher: "Bu Atik", icon: "Globe", color: "bg-orange-50/70 border-orange-200 text-orange-700" },
+    { time: "11:50 - 12:20", name: "Istirahat Ke-2 / Dzuhur", room: "Masjid / Kantin", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "12:20 - 13:55", name: "Ilmu Pengetahuan Alam (IPA)", room: "Laboratorium Fisika", teacher: "Pak Daffa", icon: "Atom", color: "bg-cyan-50/70 border-cyan-200 text-cyan-700" }
   ],
   "Kamis": [
-    { time: "07:00 - 08:30", name: "Penjas Orkes", room: "Lapangan Olahraga", teacher: "Ahmad Sodikin, S.Pd", icon: "Activity" },
-    { time: "08:30 - 10:00", name: "Bahasa Inggris", room: "Ruang Kelas 7D", teacher: "Nurlaila, M.Pd", icon: "Languages" },
-    { time: "10:00 - 10:15", name: "Istirahat Ke-1", room: "Kantin", icon: "Coffee" },
-    { time: "10:15 - 11:45", name: "Matematika", room: "Ruang Kelas 7D", teacher: "Hj. Endang Rahayu", icon: "Binary" },
-    { time: "11:45 - 13:15", name: "Bahasa Indonesia", room: "Ruang Kelas 7D", teacher: "Indah Wahyuni, S.Pd", icon: "PenTool" }
+    { time: "07:00 - 08:30", name: "Penjas Orkes", room: "Lapangan Olahraga", teacher: "Pak Wahyudin", icon: "Activity", color: "bg-lime-50/70 border-lime-200 text-lime-700" },
+    { time: "08:30 - 10:00", name: "Bahasa Inggris", room: "Ruang Kelas 7D", teacher: "Bu Sri", icon: "Languages", color: "bg-sky-50/70 border-sky-200 text-sky-700" },
+    { time: "10:00 - 10:15", name: "Istirahat Ke-1", room: "Kantin", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "10:15 - 11:45", name: "Matematika", room: "Ruang Kelas 7D", teacher: "Bu Wiwik", icon: "Binary", color: "bg-red-50/70 border-red-200 text-red-700" },
+    { time: "11:45 - 12:15", name: "Istirahat Ke-2 / Luhur", room: "Masjid / Selasar", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "12:15 - 13:45", name: "Bahasa Indonesia", room: "Ruang Kelas 7D", teacher: "Bu Dita", icon: "PenTool", color: "bg-teal-50/70 border-teal-200 text-teal-700" }
   ],
   "Jumat": [
-    { time: "07:00 - 08:15", name: "Ilmu Pengetahuan Alam", room: "Laboratorium Biologi", teacher: "Dr. Supriyanto", icon: "Atom" },
-    { time: "08:15 - 09:30", name: "Matematika", room: "Ruang Kelas 7D", teacher: "Hj. Endang Rahayu", icon: "Binary" },
-    { time: "09:30 - 09:45", name: "Istirahat Ke-1", room: "Selasar Kelas", icon: "Coffee" },
-    { time: "09:45 - 11:15", name: "Pendidikan Agama Islam", room: "Masjid Al-Azhar", teacher: "Ust. Hanafi, M.Ag", icon: "Moon" }
+    { time: "07:00 - 08:15", name: "Ilmu Pengetahuan Alam (IPA)", room: "Laboratorium Biologi", teacher: "Pak Daffa", icon: "Atom", color: "bg-cyan-50/70 border-cyan-200 text-cyan-700" },
+    { time: "08:15 - 09:30", name: "Matematika", room: "Ruang Kelas 7D", teacher: "Bu Wiwik", icon: "Binary", color: "bg-red-50/70 border-red-200 text-red-700" },
+    { time: "09:30 - 09:45", name: "Istirahat Ke-1", room: "Selasar Kelas", icon: "Coffee", color: "bg-amber-50/50 border-amber-200 text-amber-700" },
+    { time: "09:45 - 11:15", name: "Pendidikan Agama Islam (PAI)", room: "Masjid Al-Azhar", teacher: "Bu Nimas", icon: "Moon", color: "bg-indigo-50/70 border-indigo-200 text-indigo-700" }
   ]
 };
 

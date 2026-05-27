@@ -221,8 +221,17 @@ export const Attendance: React.FC = () => {
             {/* Current user's registration feedback */}
             <div className="my-6 p-4 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center justify-between">
               <div className="flex items-center space-x-3.5 text-left">
-                <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-indigo-500 text-lg">
-                  👤
+                <div className="relative shrink-0">
+                  <div className="w-11 h-11 rounded-xl border border-slate-200/40 bg-slate-50 flex items-center justify-center overflow-hidden shadow-xs">
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  {/* Small online indicator on the corner */}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-white animate-pulse" />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-700">{currentUser.name}</h4>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   Student,
   Announcement,
@@ -64,6 +64,9 @@ interface ClassHubContextType {
   solveAIQuizComplete: (scorePercentage: number) => void;
   generateAllCodes: () => void;
   resetStudentCode: (id: number, code?: string) => void;
+  sendTypingNotice: (isTyping: boolean) => void;
+  updateCustomStatus: (status: string) => void;
+  updateProfile: (name: string, bio: string, customStatus: string, avatar?: string, banner?: string) => void;
 }
 
 const ClassHubContext = createContext<ClassHubContextType | undefined>(undefined);
@@ -242,6 +245,147 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [activeLofiTrack] = useState<string>("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
   const [isFocusModeActive] = useState<boolean>(false);
 
+  const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    if (!currentUser) {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      return;
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const wsUrl = `${protocol}${window.location.host}`;
+    console.log("[WS-CLIENT] Connecting to:", wsUrl);
+
+    let active = true;
+    let ws: WebSocket;
+    let pingInterval: any;
+
+    const connect = () => {
+      if (!active) return;
+      ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (!active) return;
+        console.log("[WS-CLIENT] Authenticated connected as StudentID:", currentUser.id);
+        ws.send(JSON.stringify({ type: 'auth', studentId: currentUser.id }));
+
+        // Send keep-alive ping to maintain connection in reverse proxy layers
+        pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }));
+          }
+        }, 15000);
+      };
+
+      ws.onmessage = (event) => {
+        if (!active) return;
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'sync') {
+            console.log("[WS-CLIENT] Fully Synced Database Frame:", data);
+            if (data.studentState) {
+              const ss = data.studentState;
+              setCurrentUser(ss);
+              setMissions(ss.missions || []);
+              setAchievements(ss.achievements || []);
+              setAttendanceRecords(ss.attendanceRecords || []);
+              if (ss.streak !== undefined) {
+                setDailyStreak(ss.streak);
+              }
+            }
+            if (data.students) setStudents(data.students);
+            if (data.chatMessages) setChatMessages(data.chatMessages);
+            if (data.announcements) setAnnouncements(data.announcements);
+            if (data.kasRecords) setKasRecords(data.kasRecords);
+          }
+
+          else if (data.type === 'self_sync') {
+            if (data.studentState) {
+              const ss = data.studentState;
+              setCurrentUser(ss);
+              setMissions(ss.missions || []);
+              setAchievements(ss.achievements || []);
+              setAttendanceRecords(ss.attendanceRecords || []);
+              if (ss.streak !== undefined) {
+                setDailyStreak(ss.streak);
+              }
+            }
+          }
+
+          else if (data.type === 'student_updated') {
+            const updated = data.student;
+            setStudents(prev => prev.map(s => s.id === updated.id ? { ...s, ...updated } : s));
+            if (currentUser && currentUser.id === updated.id) {
+              setCurrentUser(prev => prev ? {
+                ...prev,
+                isOnline: updated.isOnline,
+                onlineStatus: updated.onlineStatus,
+                lastSeen: updated.lastSeen,
+                avatar: updated.avatar,
+                banner: updated.banner,
+                bio: updated.bio,
+                customStatus: updated.customStatus,
+                badges: updated.badges,
+                xp: updated.xp,
+                level: updated.level,
+                streak: updated.streak
+              } : null);
+            }
+          }
+
+          else if (data.type === 'new_chat_message') {
+            setChatMessages(prev => {
+              if (prev.some(m => m.id === data.message.id)) return prev;
+              return [...prev, data.message];
+            });
+          }
+
+          else if (data.type === 'chat_updated') {
+            setChatMessages(data.chatMessages);
+          }
+
+          else if (data.type === 'announcements_updated') {
+            setAnnouncements(data.announcements);
+          }
+
+          else if (data.type === 'kas_updated') {
+            setKasRecords(data.kasRecords);
+          }
+
+        } catch (e) {
+          console.error("[WS-CLIENT] Parse error message:", e);
+        }
+      };
+
+      ws.onclose = () => {
+        clearInterval(pingInterval);
+        if (active) {
+          console.log("[WS-CLIENT] Closed status, reconnecting in 3 seconds...");
+          setTimeout(connect, 3000);
+        }
+      };
+
+      ws.onerror = (e) => {
+        console.error("[WS-CLIENT] Error details:", e);
+      };
+    };
+
+    connect();
+
+    return () => {
+      active = false;
+      clearInterval(pingInterval);
+      if (ws) ws.close();
+      wsRef.current = null;
+    };
+  }, [currentUser?.id]);
+
   // Sync state with local storage on updates
   useEffect(() => {
     if (currentUser) {
@@ -378,6 +522,49 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
 
+  // --- TYPE ANCILLARY HELPER & SETTERS FOR PRESENCE OR STATUS ---
+  const sendTypingNotice = (isTyping: boolean) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'typing', isTyping }));
+    }
+  };
+
+  const updateCustomStatus = (status: string) => {
+    if (!currentUser) return;
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'update_student', customStatus: status }));
+    } else {
+      const u = { ...currentUser, customStatus: status };
+      setCurrentUser(u);
+      setStudents(prev => prev.map(s => s.id === currentUser.id ? u : s));
+    }
+  };
+
+  const updateProfile = (name: string, bio: string, customStatus: string, avatar?: string, banner?: string) => {
+    if (!currentUser) return;
+    const u = {
+      ...currentUser,
+      name,
+      bio,
+      customStatus,
+      ...(avatar !== undefined && { avatar }),
+      ...(banner !== undefined && { banner })
+    };
+    setCurrentUser(u);
+    setStudents(prev => prev.map(s => s.id === currentUser.id ? u : s));
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'update_student',
+        name,
+        bio,
+        customStatus,
+        avatar,
+        banner
+      }));
+    }
+  };
+
   // --- GAME SYSTEM ACTIONS (XP, LEVEL, STREAK) ---
   const addXP = (amount: number, reason: string) => {
     if (!currentUser) return;
@@ -394,12 +581,18 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       level: newLevel
     };
 
-    setCurrentUser(updatedUser);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'update_student',
+        xp: newXp,
+        level: newLevel
+      }));
+    } else {
+      setCurrentUser(updatedUser);
+      setStudents(prev => prev.map(s => s.id === currentUser.id ? updatedUser : s));
+    }
 
-    // 2. Sync to students list
-    setStudents(prev => prev.map(s => s.id === currentUser.id ? updatedUser : s));
-
-    // 3. Spawning companion effects on pet
+    // 2. Spawning companion effects on pet
     setCurrentPet(prev => {
       const petNewXp = prev.xp + Math.floor(amount * 0.5);
       const petThreshold = prev.level * 150;
@@ -412,19 +605,6 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         status: levelingStatus(prev.status)
       };
     });
-
-    // Provide immediate notification inside chat as notification alert log
-    const systemNotice: ChatMessage = {
-      id: "sys-" + Date.now(),
-      studentId: 647,
-      studentName: "SYSTEM REWARD",
-      avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=system&backgroundColor=ffb3b3",
-      role: "Admin",
-      content: `🎉 **${currentUser.name}** mendapatkan **+${amount} XP** (${reason})! ${leveledUp ? ` Naik ke Level **${newLevel}**! 🚀` : ''}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      reactions: []
-    };
-    setChatMessages(prev => [...prev, systemNotice]);
   };
 
   const levelingStatus = (curr: VirtualPet['status']): VirtualPet['status'] => {
@@ -433,15 +613,20 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const incrementStreak = () => {
-    setDailyStreak(prev => {
-      const updated = prev + 1;
-      if (currentUser) {
-        const u = { ...currentUser, streak: updated };
-        setCurrentUser(u);
-        setStudents(sList => sList.map(s => s.id === currentUser.id ? u : s));
-      }
-      return updated;
-    });
+    if (!currentUser) return;
+    const updated = (currentUser.streak || 0) + 1;
+    setDailyStreak(updated);
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'update_student',
+        streak: updated
+      }));
+    } else {
+      const u = { ...currentUser, streak: updated };
+      setCurrentUser(u);
+      setStudents(sList => sList.map(s => s.id === currentUser.id ? u : s));
+    }
   };
 
   const claimSpinReward = () => {
@@ -459,13 +644,31 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const toggleMission = (id: string) => {
-    setMissions(prev => prev.map(m => {
-      if (m.id === id && !m.completed) {
-        addXP(m.xpReward, `Daily Mission: ${m.title}`);
-        return { ...m, completed: true };
-      }
-      return m;
-    }));
+    if (!currentUser) return;
+    
+    const targetMission = missions.find(m => m.id === id);
+    if (!targetMission || targetMission.completed) return;
+
+    // Calculate new XP
+    const newXp = (currentUser.xp || 0) + targetMission.xpReward;
+    const levelThreshold = 200;
+    const newLevel = Math.floor(newXp / levelThreshold) + 1;
+
+    const nextMissions = missions.map(m => m.id === id ? { ...m, completed: true } : m);
+    setMissions(nextMissions);
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'update_student',
+        xp: newXp,
+        level: newLevel,
+        missions: nextMissions
+      }));
+    } else {
+      const u = { ...currentUser, xp: newXp, level: newLevel };
+      setCurrentUser(u);
+      setStudents(prev => prev.map(s => s.id === currentUser.id ? u : s));
+    }
   };
 
 
@@ -474,49 +677,66 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // ANNOUNCEMENTS
   const addAnnouncement = (title: string, content: string, category: Announcement['category'], dueDate?: string) => {
     if (!currentUser) return;
-    const fresh: Announcement = {
-      id: "ann-" + Date.now(),
-      title,
-      content,
-      author: currentUser.name,
-      role: currentUser.role,
-      date: new Date().toISOString().split('T')[0],
-      category,
-      dueDate
-    };
-    setAnnouncements(prev => [fresh, ...prev]);
-    addXP(100, "Memposting Pengumuman Kelas");
 
-    // Chat notify classmate
-    const notice: ChatMessage = {
-      id: "notice-" + Date.now(),
-      studentId: currentUser.id,
-      studentName: currentUser.name,
-      avatar: currentUser.avatar,
-      role: currentUser.role,
-      content: `📢 **PENGUMUMAN BARU**: **${title}**\n\n"${content}" ${dueDate ? `\n\n⚠️ Deadline: ${dueDate}` : ''}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      reactions: [{ emoji: "📌", count: 1, users: [currentUser.id] }]
-    };
-    setChatMessages(prev => [...prev, notice]);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'add_announcement',
+        title,
+        content,
+        category,
+        dueDate
+      }));
+    } else {
+      // Offline fallback
+      const fresh: Announcement = {
+        id: "ann-" + Date.now(),
+        title,
+        content,
+        author: currentUser.name,
+        role: currentUser.role,
+        date: new Date().toISOString().split('T')[0],
+        category,
+        dueDate
+      };
+      setAnnouncements(prev => [fresh, ...prev]);
+    }
+    
+    addXP(100, "Memposting Pengumuman Kelas");
   };
 
   const deleteAnnouncement = (id: string) => {
-    setAnnouncements(prev => prev.filter(a => a.id !== id));
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'delete_announcement',
+        id
+      }));
+    } else {
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+    }
   };
 
   // KAS KELAS (FINANCE)
   const addKas = (type: 'income' | 'expense', amount: number, description: string, category: string) => {
-    const fresh: KasRecord = {
-      id: "kas-" + Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      type,
-      amount,
-      description,
-      category,
-      recordedBy: currentUser ? currentUser.name : "Wali Kelas"
-    };
-    setKasRecords(prev => [fresh, ...prev]);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'add_kas',
+        kasType: type,
+        amount,
+        description,
+        category
+      }));
+    } else {
+      const fresh: KasRecord = {
+        id: "kas-" + Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        type,
+        amount,
+        description,
+        category,
+        recordedBy: currentUser ? currentUser.name : "Wali Kelas"
+      };
+      setKasRecords(prev => [fresh, ...prev]);
+    }
 
     if (currentUser) {
       addXP(120, `Mencatat Kas Kelas: ${description}`);
@@ -539,116 +759,121 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
-    setAttendanceRecords(prev => [...prev, fresh]);
-    addXP(150, "Kehadiran Harian Terdata");
+    const updatedRecords = [...attendanceRecords, fresh];
+    setAttendanceRecords(updatedRecords);
+
+    const newXp = (currentUser.xp || 0) + 150;
+    const levelThreshold = 200;
+    const newLevel = Math.floor(newXp / levelThreshold) + 1;
 
     // Complete Daily Mission absensi if type is checked
-    setMissions(prev => prev.map(m => {
+    const nextMissions = missions.map(m => {
       if (m.type === 'absensi' && !m.completed) {
-        addXP(m.xpReward, `Misi Selesai: ${m.title}`);
         return { ...m, completed: true };
       }
       return m;
-    }));
+    });
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'update_student',
+        xp: newXp,
+        level: newLevel,
+        attendanceRecords: updatedRecords,
+        missions: nextMissions
+      }));
+    } else {
+      const u = { ...currentUser, xp: newXp, level: newLevel };
+      setCurrentUser(u);
+      setStudents(prev => prev.map(s => s.id === currentUser.id ? u : s));
+      setMissions(nextMissions);
+    }
   };
 
   // CHAT (DISCORD-STYLE)
   const sendChatMessage = (content: string, attachment?: ChatMessage['attachment'], replyTo?: ChatMessage['replyTo']) => {
     if (!currentUser) return;
-    const fresh: ChatMessage = {
-      id: "msg-" + Date.now(),
-      studentId: currentUser.id,
-      studentName: currentUser.name,
-      avatar: currentUser.avatar,
-      role: currentUser.role,
-      content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      attachment,
-      reactions: [],
-      replyTo
-    };
 
-    setChatMessages(prev => [...prev, fresh]);
-    addXP(15, "Aktif Berdiskusi di Chat Kelas");
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'chat_message',
+        content,
+        attachment,
+        replyTo
+      }));
 
-    // --- Interactive simulated classmates chatbot ---
-    // If user posts a specific prompt or chat, other students react!
-    const classmates = students.filter(s => s.id !== currentUser.id && s.id !== 0);
-    const speaker = classmates[Math.floor(Math.random() * classmates.length)];
-
-    setTimeout(() => {
-      // Simulate typing indicator
-      const replies = [
-        "Wah setuju tuh keren banget portalnya! 😎",
-        "Keren banget, Seven D kelas inovatif modern 2026. 🚀",
-        "Siap laksanakan ketua! Gas pol belajar.",
-        "Sudah kelar PR nya? Mau liat dong heheh 😆",
-        "Pak Wahyudin emang wali kelas terbaik dah! Programmer pula 💻⚡",
-        "Hari ini piket siapa aja ya? Jangan lupa sapu kolong meja!",
-        "Mantap pol, kuis AI tadi asyik juga buat dicoba loh.",
-      ];
-      const randomContent = replies[Math.floor(Math.random() * replies.length)];
-
-      const repliesMessage: ChatMessage = {
-        id: "msg-" + (Date.now() + 100),
-        studentId: speaker.id,
-        studentName: speaker.name,
-        avatar: speaker.avatar,
-        role: speaker.role,
-        content: randomContent,
+      // Award XP for participation
+      addXP(15, "Aktif Berdiskusi di Chat Kelas");
+    } else {
+      // Offline implementation
+      const fresh: ChatMessage = {
+        id: "msg-" + Date.now(),
+        studentId: currentUser.id,
+        studentName: currentUser.name,
+        avatar: currentUser.avatar,
+        role: currentUser.role,
+        content,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        reactions: [{ emoji: "😆", count: 1, users: [currentUser.id] }],
-        replyTo: {
-          id: fresh.id,
-          name: currentUser.name,
-          content: fresh.content.length > 40 ? fresh.content.slice(0, 40) + "..." : fresh.content
-        }
+        attachment,
+        reactions: [],
+        replyTo
       };
-
-      setChatMessages(prev => [...prev, repliesMessage]);
-    }, 3000);
+      setChatMessages(prev => [...prev, fresh]);
+    }
   };
 
   const reactToMessage = (msgId: string, emoji: string) => {
-    if (!currentUser) return;
-    setChatMessages(prev => prev.map(msg => {
-      if (msg.id === msgId) {
-        // Look for existing reaction
-        const index = msg.reactions.findIndex(r => r.emoji === emoji);
-        if (index > -1) {
-          const rx = msg.reactions[index];
-          const userIdx = rx.users.indexOf(currentUser.id);
-          if (userIdx > -1) {
-            // Remove user reaction
-            const updatedUsers = rx.users.filter(id => id !== currentUser.id);
-            if (updatedUsers.length === 0) {
-              return { ...msg, reactions: msg.reactions.filter((_, i) => i !== index) };
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'react_message',
+        msgId,
+        emoji
+      }));
+    } else {
+      // Offline react simulation
+      if (!currentUser) return;
+      setChatMessages(prev => prev.map(msg => {
+        if (msg.id === msgId) {
+          const index = msg.reactions.findIndex(r => r.emoji === emoji);
+          if (index > -1) {
+            const rx = msg.reactions[index];
+            const userIdx = rx.users.indexOf(currentUser.id);
+            if (userIdx > -1) {
+              const updatedUsers = rx.users.filter(id => id !== currentUser.id);
+              if (updatedUsers.length === 0) {
+                return { ...msg, reactions: msg.reactions.filter((_, i) => i !== index) };
+              }
+              return {
+                ...msg,
+                reactions: msg.reactions.map((r, i) => i === index ? { ...r, count: r.count - 1, users: updatedUsers } : r)
+              };
+            } else {
+              return {
+                ...msg,
+                reactions: msg.reactions.map((r, i) => i === index ? { ...r, count: r.count + 1, users: [...r.users, currentUser.id] } : r)
+              };
             }
-            return {
-              ...msg,
-              reactions: msg.reactions.map((r, i) => i === index ? { ...r, count: r.count - 1, users: updatedUsers } : r)
-            };
           } else {
-            // Add user reaction
             return {
               ...msg,
-              reactions: msg.reactions.map((r, i) => i === index ? { ...r, count: r.count + 1, users: [...r.users, currentUser.id] } : r)
+              reactions: [...msg.reactions, { emoji, count: 1, users: [currentUser.id] }]
             };
           }
-        } else {
-          // Add brand new reaction
-          return {
-            ...msg,
-            reactions: [...msg.reactions, { emoji, count: 1, users: [currentUser.id] }]
-          };
         }
-      }
-      return msg;
-    }));
+        return msg;
+      }));
+    }
   };
 
   const deleteMessage = (msgId: string) => {
-    setChatMessages(prev => prev.filter(m => m.id !== msgId));
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'delete_message',
+        msgId
+      }));
+    } else {
+      setChatMessages(prev => prev.filter(m => m.id !== msgId));
+    }
   };
 
   // PIKET (CLEANING CHECKLIST)
@@ -661,17 +886,28 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Find custom student to reward XP
     const target = students.find(s => s.name.toLowerCase().includes(studentName.toLowerCase()) || studentName.toLowerCase().includes(s.name.toLowerCase()));
     if (target) {
-      const updated = {
-        ...target,
-        xp: target.xp + 250
-      };
-      setStudents(prev => prev.map(s => s.id === target.id ? updated : s));
-      if (currentUser && currentUser.id === target.id) {
-        setCurrentUser(updated);
+      const updatedXp = target.xp + 250;
+      const levelThreshold = 200;
+      const updatedLevel = Math.floor(updatedXp / levelThreshold) + 1;
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser && currentUser.id === target.id) {
+        // Real-time update if logged-in user completes their own piket
+        wsRef.current.send(JSON.stringify({
+          type: 'update_student',
+          xp: updatedXp,
+          level: updatedLevel
+        }));
+      } else {
+        const updated = {
+          ...target,
+          xp: updatedXp,
+          level: updatedLevel
+        };
+        setStudents(prev => prev.map(s => s.id === target.id ? updated : s));
       }
     }
 
-    // Post to chat
+    // Post system alert to chat
     const alertMsg: ChatMessage = {
       id: "piket-" + Date.now(),
       studentId: 0,
@@ -683,7 +919,16 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       attachment: imageBase64 ? { type: 'image', url: imageBase64, name: 'bukti_piket.png' } : undefined,
       reactions: [{ emoji: "✨", count: 3, users: [1, 2, target ? target.id : 30] }]
     };
-    setChatMessages(prev => [...prev, alertMsg]);
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'chat_message',
+        content: alertMsg.content,
+        attachment: alertMsg.attachment
+      }));
+    } else {
+      setChatMessages(prev => [...prev, alertMsg]);
+    }
   };
 
   // VIRTUAL PET ADVENTURE
@@ -693,7 +938,6 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const evolvePet = () => {
     setCurrentPet(prev => {
-      const names = { Neko: 'Aero Cat', Shiba: 'Cyber Doggo', Dino: 'Rex Neon' };
       const nextType = prev.type === 'Neko' ? 'Shiba' : prev.type === 'Shiba' ? 'Dino' : 'Neko';
       return {
         ...prev,
@@ -712,13 +956,28 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     addXP(gainedXp, `Mengerjakan Kuiz AI (Skor ${scorePercentage}%)`);
 
     // Toggle daily mission quiz if applicable
-    setMissions(prev => prev.map(m => {
+    const nextMissions = missions.map(m => {
       if (m.type === 'quiz' && !m.completed && isSuccess) {
-        addXP(m.xpReward, `Misi Selesai: ${m.title}`);
         return { ...m, completed: true };
       }
       return m;
-    }));
+    });
+
+    if (isSuccess) {
+      setMissions(nextMissions);
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        const newXp = (currentUser.xp || 0) + gainedXp;
+        const levelThreshold = 200;
+        const newLevel = Math.floor(newXp / levelThreshold) + 1;
+        
+        wsRef.current.send(JSON.stringify({
+          type: 'update_student',
+          xp: newXp,
+          level: newLevel,
+          missions: nextMissions
+        }));
+      }
+    }
   };
 
   return (
@@ -759,7 +1018,10 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       evolvePet,
       solveAIQuizComplete,
       generateAllCodes,
-      resetStudentCode
+      resetStudentCode,
+      sendTypingNotice,
+      updateCustomStatus,
+      updateProfile
     }}>
       {children}
     </ClassHubContext.Provider>
