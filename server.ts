@@ -7,7 +7,6 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import { WebSocketServer, WebSocket } from 'ws';
 import { INITIAL_STUDENTS, INITIAL_MISSIONS, INITIAL_ACHIEVEMENTS } from './src/data/students';
@@ -184,7 +183,23 @@ app.post('/api/ai/quiz', async (req, res) => {
 // REAL-TIME DATABASING & PERSISTENCE SECTION
 // ==========================================
 
-const DB_PATH = path.join(process.cwd(), 'classhub_db.json');
+const isVercel = !!process.env.VERCEL;
+const DB_PATH = isVercel
+  ? path.join('/tmp', 'classhub_db.json')
+  : path.join(process.cwd(), 'classhub_db.json');
+
+// If running in Vercel, copy the pre-packaged db to /tmp if it doesn't exist yet
+if (isVercel) {
+  try {
+    const originalDbPath = path.join(process.cwd(), 'classhub_db.json');
+    if (!fs.existsSync(DB_PATH) && fs.existsSync(originalDbPath)) {
+      fs.copyFileSync(originalDbPath, DB_PATH);
+      console.log("[SEVEN_D_SERVER] Copied initial database to /tmp successfully.");
+    }
+  } catch (err) {
+    console.error("[SEVEN_D_SERVER] Failed to copy fallback database to /tmp:", err);
+  }
+}
 
 // Initialize default students records with their personal progression context
 const defaultStudents: { [idKey: string]: any } = {};
@@ -642,6 +657,7 @@ wss.on('connection', (ws) => {
 
 async function start() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
