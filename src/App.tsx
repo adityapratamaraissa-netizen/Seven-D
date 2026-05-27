@@ -52,7 +52,7 @@ const AppContent: React.FC = () => {
   }, [currentUser]);
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] text-slate-800 antialiased flex flex-col justify-between overflow-x-hidden">
+    <div className="w-full bg-[#F4F6FA] text-slate-800 antialiased flex flex-col justify-between">
       
       {/* 1. OUT-OF-PORTAL ROUTING PANEL */}
       {currentScreen === 'landing' && (
@@ -65,7 +65,7 @@ const AppContent: React.FC = () => {
 
       {/* 2. MAIN HUB PORTAL ENCLOSING */}
       {currentScreen === 'portal' && currentUser && (
-        <div className="flex-grow flex flex-col min-h-screen relative pb-16 lg:pb-0">
+        <div className="flex-grow flex flex-col relative pb-16 lg:pb-0 w-full">
           {/* Glassy dynamic responsive top navbar */}
           <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 

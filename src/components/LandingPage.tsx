@@ -17,7 +17,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const { classLogo } = useClassHub();
 
   return (
-    <div className="relative min-h-screen bg-[#F8FAFC] overflow-y-auto flex flex-col justify-between selection:bg-purple-100 selection:text-purple-900 font-sans">
+    <div className="relative w-full min-h-screen bg-[#F8FAFC] flex flex-col justify-between selection:bg-purple-100 selection:text-purple-900 font-sans">
       {/* Cinematic Glowing Blobs */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-cyan-200/40 to-blue-300/30 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-200/40 to-pink-300/30 blur-[130px] pointer-events-none" />

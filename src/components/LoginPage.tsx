@@ -150,7 +150,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-sans">
+    <div className="relative w-full min-h-screen bg-[#F0F2F6] flex items-center justify-center p-4 sm:p-6 font-sans">
       {/* Animated Aesthetic Background Core Ellipse Elements */}
       <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-cyan-300/35 to-blue-400/20 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-indigo-300/35 to-purple-400/20 blur-[110px] pointer-events-none" />
