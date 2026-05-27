@@ -656,7 +656,7 @@ wss.on('connection', (ws) => {
 // VITE MIDDLEWARE SETUP FOR DEV/PROD
 
 async function start() {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -688,6 +688,8 @@ async function start() {
   }
 }
 
-start();
+start().catch((err) => {
+  console.error("[SEVEN_D_SERVER] Fatal error during async server startup:", err);
+});
 
 export default app;
