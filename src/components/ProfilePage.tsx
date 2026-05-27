@@ -17,7 +17,9 @@ export const ProfilePage: React.FC = () => {
     currentUser,
     achievements,
     updateProfile,
-    addXP
+    addXP,
+    classLogo,
+    changeClassLogo
   } = useClassHub();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -31,6 +33,72 @@ export const ProfilePage: React.FC = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError(null);
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/svg+xml'];
+    if (!validTypes.includes(file.type)) {
+      setUploadError('Hanya mendukung format JPG, PNG, WEBP, atau SVG.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Ukuran file logo terlalu besar. Maksimal 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => {
+      setUploadError('Kesalahan memproses berkas gambar.');
+    };
+
+    reader.onload = (readerEvent) => {
+      const img = new Image();
+      img.onerror = () => {
+        if (file.type === 'image/svg+xml') {
+          const rawSvgData = readerEvent.target?.result as string;
+          changeClassLogo(rawSvgData);
+          addXP(40, "Menyesuaikan Logo Kelas dengan SVG kustom");
+        } else {
+          setUploadError('Berkas gambar rusak atau tidak dapat disajikan.');
+        }
+      };
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            throw new Error('Canvas Context Not Found');
+          }
+
+          const targetSize = 256;
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+
+          const minDimension = Math.min(img.width, img.height);
+          const sourceX = (img.width - minDimension) / 2;
+          const sourceY = (img.height - minDimension) / 2;
+
+          ctx.drawImage(img, sourceX, sourceY, minDimension, minDimension, 0, 0, targetSize, targetSize);
+          const base64Data = canvas.toDataURL('image/png', 0.9);
+          changeClassLogo(base64Data);
+          addXP(40, "Menampilkan foto kustom sebagai Logo Kelas");
+        } catch (err) {
+          changeClassLogo(readerEvent.target?.result as string);
+        }
+      };
+
+      img.src = readerEvent.target?.result as string;
+    };
+
+    reader.readAsDataURL(file);
+  };
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -399,6 +467,81 @@ export const ProfilePage: React.FC = () => {
             <div className="text-center bg-amber-50/50 border border-amber-200/20 rounded-2xl p-3 px-5">
               <span className="text-xl font-black text-amber-600 font-mono">{unlockedBadges.length}</span>
               <p className="text-[9px] text-slate-400 uppercase font-black tracking-wider mt-0.5">Badges</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 1.5. VISUAL CLASS LOGO MANAGER CARD */}
+      <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-slate-200/50 p-6 shadow-xs text-left space-y-4">
+        <div>
+          <span className="text-[10px] text-slate-400 font-mono tracking-widest uppercase block">Grafis Identitas Kelas</span>
+          <h3 className="text-base font-bold text-slate-800 mt-1 flex items-center gap-1.5">
+            <ImageIcon className="w-5 h-5 text-blue-500" />
+            <span>Kustomisasi Logo SEVEN D</span>
+          </h3>
+          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed font-sans">
+            Ganti logo default "7D" di pojok kiri atas dan tampilan dasar dengan lambang atau logo kelas buatan Anda sendiri!
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 rounded-2xl border border-slate-100/80">
+          {/* Logo current preview sphere */}
+          <div className="relative group/logo shadow-sm rounded-2xl overflow-hidden border border-slate-100 bg-white">
+            <div className="w-20 h-20 flex items-center justify-center overflow-hidden relative">
+              <img 
+                src={classLogo} 
+                alt="Logo Kelas Terpasang" 
+                className="w-full h-full object-cover transition-transform group-hover/logo:scale-105 duration-300"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    parent.className = "w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-xl font-mono";
+                    parent.innerHTML = '7D';
+                  }
+                }}
+              />
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-1 border-2 border-white shadow-xs">
+              <Check className="w-2.5 h-2.5" />
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-3.5 text-center sm:text-left">
+            <div className="space-y-1">
+              <h4 className="text-xs font-extrabold text-slate-700">Unggah Logo Kustom Anda</h4>
+              <p className="text-[10.5px] text-slate-400 leading-relaxed">Format SVG, PNG, JPG, atau WEBP. Rekomendasi rasio persegi (1:1) agar tampak presisi di seluruh layout dashboard.</p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <input 
+                id="logo-hidden-upload"
+                type="file" 
+                onChange={handleLogoFileChange}
+                accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                className="hidden" 
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('logo-hidden-upload')?.click()}
+                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-sm shadow-blue-500/15 transition-all"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Unggah Foto Logo</span>
+              </button>
+
+              {classLogo !== '/icon.svg' && (
+                <button
+                  type="button"
+                  onClick={() => changeClassLogo('/icon.svg')}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-all"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Kembalikan Default</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

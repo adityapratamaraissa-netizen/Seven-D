@@ -1,0 +1,44 @@
+{
+  "name": "SEVEN D Class Hub",
+  "short_name": "SEVEN D",
+  "description": "Website kelas premium modern, futuristik, dan interaktif untuk kelas SEVEN D - SMPN 2 Lamongan.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Dasbor Siswa",
+      "url": "/?tab=dashboard",
+      "description": "Buka halaman utama Dasbor"
+    },
+    {
+      "name": "AI Study Hub",
+      "url": "/?tab=study_hub",
+      "description": "Buka asisten belajar Pintar"
+    }
+  ]
+}

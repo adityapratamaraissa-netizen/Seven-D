@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Background icon shape -->
+  <rect width="512" height="512" rx="128" fill="url(#blueGrad)" />
+  <!-- Glossy overlay reflection -->
+  <path d="M 0 128 C 0 57.3 57.3 0 128 0 L 384 0 C 454.7 0 512 57.3 512 128 C 512 128 350 180 256 180 C 162 180 0 128 0 128 Z" fill="url(#glowGrad)" opacity="0.15"/>
+  <!-- Stylish Ring/Orbit representing fusion/connected community -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#ffffff" stroke-width="16" stroke-opacity="0.25" />
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#ffffff" stroke-width="16" stroke-dasharray="100 80" stroke-linecap="round" />
+  <!-- Dynamic 7D typography inside logo -->
+  <text x="256" y="305" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="165" fill="#ffffff" text-anchor="middle" letter-spacing="-5">7D</text>
+  <!-- Small dot highlighting premium aspect -->
+  <circle cx="370" cy="180" r="14" fill="#60a5fa" />
+</svg>

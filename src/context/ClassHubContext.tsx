@@ -42,8 +42,11 @@ interface ClassHubContextType {
   piketStatusCurrentDay: { [studentName: string]: boolean };
   activeLofiTrack: string;
   isFocusModeActive: boolean;
+  isConnected: boolean;
+  classLogo: string;
 
   // Actions
+  changeClassLogo: (logoUrl: string) => void;
   loginSiswa: (name: string, id: number, code: string) => boolean;
   loginWaliKelas: (code: string) => boolean;
   logout: () => void;
@@ -244,8 +247,24 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [activeLofiTrack] = useState<string>("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
   const [isFocusModeActive] = useState<boolean>(false);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [classLogo, setClassLogo] = useState<string>(() => {
+    return localStorage.getItem('7d_class_logo') || '/icon.svg';
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
+
+  const queueOfflineAction = (action: any) => {
+    try {
+      const cachedQueue = localStorage.getItem('7d_offline_queue');
+      const queue = cachedQueue ? JSON.parse(cachedQueue) : [];
+      queue.push(action);
+      localStorage.setItem('7d_offline_queue', JSON.stringify(queue));
+      console.log("[Offline Sync] Enqueued offline action:", action.type);
+    } catch (e) {
+      console.error("[Offline Sync] Failed to enqueue offline action:", e);
+    }
+  };
 
   useEffect(() => {
     if (!currentUser) {
@@ -253,6 +272,7 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         wsRef.current.close();
         wsRef.current = null;
       }
+      setIsConnected(false);
       return;
     }
 
@@ -271,6 +291,7 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       ws.onopen = () => {
         if (!active) return;
+        setIsConnected(true);
         console.log("[WS-CLIENT] Authenticated connected as StudentID:", currentUser.id);
         ws.send(JSON.stringify({ type: 'auth', studentId: currentUser.id }));
 
@@ -280,6 +301,25 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             ws.send(JSON.stringify({ type: 'ping' }));
           }
         }, 15000);
+
+        // Sync pending actions if any queued offline
+        try {
+          const cachedQueue = localStorage.getItem('7d_offline_queue');
+          if (cachedQueue) {
+            const queue = JSON.parse(cachedQueue);
+            if (Array.isArray(queue) && queue.length > 0) {
+              console.log(`[Offline Sync] Reconnection active. Resyncing ${queue.length} delayed actions to server.`);
+              queue.forEach(item => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(JSON.stringify(item));
+                }
+              });
+              localStorage.removeItem('7d_offline_queue');
+            }
+          }
+        } catch (err) {
+          console.error("[Offline Sync] Error replaying actions:", err);
+        }
       };
 
       ws.onmessage = (event) => {
@@ -364,6 +404,7 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
 
       ws.onclose = () => {
+        setIsConnected(false);
         clearInterval(pingInterval);
         if (active) {
           console.log("[WS-CLIENT] Closed status, reconnecting in 3 seconds...");
@@ -372,6 +413,7 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
 
       ws.onerror = (e) => {
+        setIsConnected(false);
         console.error("[WS-CLIENT] Error details:", e);
       };
     };
@@ -699,6 +741,13 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         dueDate
       };
       setAnnouncements(prev => [fresh, ...prev]);
+      queueOfflineAction({
+        type: 'add_announcement',
+        title,
+        content,
+        category,
+        dueDate
+      });
     }
     
     addXP(100, "Memposting Pengumuman Kelas");
@@ -712,6 +761,10 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }));
     } else {
       setAnnouncements(prev => prev.filter(a => a.id !== id));
+      queueOfflineAction({
+        type: 'delete_announcement',
+        id
+      });
     }
   };
 
@@ -736,6 +789,13 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         recordedBy: currentUser ? currentUser.name : "Wali Kelas"
       };
       setKasRecords(prev => [fresh, ...prev]);
+      queueOfflineAction({
+        type: 'add_kas',
+        kasType: type,
+        amount,
+        description,
+        category
+      });
     }
 
     if (currentUser) {
@@ -819,6 +879,12 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         replyTo
       };
       setChatMessages(prev => [...prev, fresh]);
+      queueOfflineAction({
+        type: 'chat_message',
+        content,
+        attachment,
+        replyTo
+      });
     }
   };
 
@@ -980,6 +1046,11 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const changeClassLogo = (logoUrl: string) => {
+    setClassLogo(logoUrl);
+    localStorage.setItem('7d_class_logo', logoUrl);
+  };
+
   return (
     <ClassHubContext.Provider value={{
       currentUser,
@@ -998,6 +1069,8 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       piketStatusCurrentDay,
       activeLofiTrack,
       isFocusModeActive,
+      isConnected,
+      classLogo,
 
       loginSiswa,
       loginWaliKelas,
@@ -1021,7 +1094,8 @@ export const ClassHubProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       resetStudentCode,
       sendTypingNotice,
       updateCustomStatus,
-      updateProfile
+      updateProfile,
+      changeClassLogo
     }}>
       {children}
     </ClassHubContext.Provider>

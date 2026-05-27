@@ -1,13 +1,83 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>SEVEN D Class Hub</title>
+    
+    <!-- PWA & Mobile Optimization settings -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SEVEN D" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Custom styling to prevent browser bounce and native app feel -->
+    <style>
+      html, body {
+        overscroll-behavior-y: contain;
+        overflow-x: hidden;
+        background-color: #F4F6FA;
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-slate-50 text-slate-800">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Pre-rendering PNG icons dynamically inside the cached service layers -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => console.log('SW Registered successfully:', reg.scope))
+            .catch((err) => console.log('SW Registration failed:', err));
+          
+          generateAndCachePngIcons();
+        });
+      }
+
+      function generateAndCachePngIcons() {
+        const sizes = [192, 512];
+        const cacheName = 'seven-d-class-hub-v1';
+        
+        caches.open(cacheName).then((cache) => {
+          sizes.forEach(size => {
+            const iconPath = `/icon-${size}.png`;
+            
+            cache.match(iconPath).then((cached) => {
+              if (cached) return;
+              
+              const img = new Image();
+              img.src = '/icon.svg';
+              img.crossOrigin = 'anonymous';
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, size, size);
+                  canvas.toBlob((blob) => {
+                    if (blob) {
+                      const response = new Response(blob, {
+                        headers: { 'Content-Type': 'image/png' }
+                      });
+                      cache.put(iconPath, response);
+                      console.log('Dynamic cached icon rendered size:', size);
+                    }
+                  }, 'image/png');
+                }
+              };
+            });
+          });
+        });
+      }
+    </script>
   </body>
 </html>
+
 

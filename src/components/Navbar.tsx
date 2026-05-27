@@ -27,7 +27,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
-  const { currentUser, logout, currentPet, isTeacherMode } = useClassHub();
+  const { currentUser, logout, currentPet, isTeacherMode, classLogo } = useClassHub();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (!currentUser) return null;
@@ -58,8 +58,22 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Left: Brand logo */}
         <div className="flex items-center space-x-3 shrink-0">
-          <div className="w-9 h-9 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/10">
-            <span className="text-white font-extrabold text-sm font-mono">7D</span>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shadow-md shadow-blue-500/10 bg-slate-50 border border-slate-100">
+            <img 
+              src={classLogo} 
+              alt="Logo SEVEN D" 
+              className="w-full h-full object-cover select-none"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                // Fail-safe fallback to text if image fails to load
+                e.currentTarget.style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  parent.className = "w-9 h-9 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/10 text-white font-extrabold text-sm font-mono";
+                  parent.innerHTML = '7D';
+                }
+              }}
+            />
           </div>
           <div className="hidden md:block">
             <span className="text-slate-800 font-bold text-sm tracking-tight">Portal SEVEN D</span>
@@ -134,42 +148,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             </button>
           </div>
 
-          {/* Mobile menu open toggler */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 hover:bg-slate-100 lg:hidden rounded-xl text-slate-600"
-          >
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {/* Native mobile alignment spacing */}
+          <div className="lg:hidden w-2" />
         </div>
       </div>
-
-      {/* Mobile Drawer menu list */}
-      {isMobileMenuOpen && (
-        <div id="mobile-nav-panel" className="lg:hidden mt-3 bg-white border border-slate-200/50 rounded-2xl p-3 flex flex-col gap-1 shadow-lg">
-          {finalNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`flex items-center space-x-2.5 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-blue-500 text-white'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </nav>
   );
 };
